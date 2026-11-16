@@ -1,0 +1,626 @@
+-- Roblox 全言語対応・スタイリッシュ翻訳チャットスクリプト
+-- МОДИФИЦИРОВАНО: быстрые фразы на арабском, UI остаётся на японском
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
+local TextChatService = game:GetService("TextChatService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+if LocalPlayer.PlayerGui:FindFirstChild("MultiLangTranslatorUI") then
+    LocalPlayer.PlayerGui.MultiLangTranslatorUI:Destroy()
+end
+
+local currentTargetLang = "en"
+local currentTargetName = "英語 (English)"
+local currentSourceLang = "auto"
+local currentSourceName = "自動 (Auto)"
+local isLangDropdownOpen = false
+local isSourceDropdownOpen = false
+local isOpen = true
+
+local languages = {
+    {name = "日本語", en = "Japanese", code = "ja"},
+    {name = "英語", en = "English", code = "en"},
+    {name = "韓国語", en = "Korean", code = "ko"},
+    {name = "中国語簡体字", en = "Chinese Simplified", code = "zh-CN"},
+    {name = "中国語繁体字", en = "Chinese Traditional", code = "zh-TW"},
+    {name = "スペイン語", en = "Spanish", code = "es"},
+    {name = "フランス語", en = "French", code = "fr"},
+    {name = "ドイツ語", en = "German", code = "de"},
+    {name = "イタリア語", en = "Italian", code = "it"},
+    {name = "ポルトガル語", en = "Portuguese", code = "pt"},
+    {name = "ロシア語", en = "Russian", code = "ru"},
+    {name = "アラビア語", en = "Arabic", code = "ar"},
+    {name = "ヒンディー語", en = "Hindi", code = "hi"},
+    {name = "インドネシア語", en = "Indonesian", code = "id"},
+    {name = "ベトナム語", en = "Vietnamese", code = "vi"},
+    {name = "タイ語", en = "Thai", code = "th"},
+    {name = "トルコ語", en = "Turkish", code = "tr"},
+    {name = "オランダ語", en = "Dutch", code = "nl"},
+    {name = "ポーランド語", en = "Polish", code = "pl"},
+    {name = "ウクライナ語", en = "Ukrainian", code = "uk"},
+    {name = "ギリシャ語", en = "Greek", code = "el"},
+    {name = "チェコ語", en = "Czech", code = "cs"},
+    {name = "スウェーデン語", en = "Swedish", code = "sv"},
+    {name = "デンマーク語", en = "Danish", code = "da"},
+    {name = "フィンランド語", en = "Finnish", code = "fi"},
+    {name = "ノルウェー語", en = "Norwegian", code = "no"},
+    {name = "ルーマニア語", en = "Romanian", code = "ro"},
+    {name = "ハンガリー語", en = "Hungarian", code = "hu"},
+    {name = "スロバキア語", en = "Slovak", code = "sk"},
+    {name = "ブルガリア語", en = "Bulgarian", code = "bg"},
+    {name = "クロアチア語", en = "Croatian", code = "hr"},
+    {name = "セルビア語", en = "Serbian", code = "sr"},
+    {name = "マレー語", en = "Malay", code = "ms"},
+    {name = "フィリピン語", en = "Tagalog", code = "tl"},
+    {name = "ヘブライ語", en = "Hebrew", code = "he"},
+    {name = "ペルシア語", en = "Persian", code = "fa"},
+    {name = "ウルドゥー語", en = "Urdu", code = "ur"},
+    {name = "ベンガル語", en = "Bengali", code = "bn"},
+    {name = "タミル語", en = "Tamil", code = "ta"},
+    {name = "テルグ語", en = "Telugu", code = "te"},
+    {name = "スワヒリ語", en = "Swahili", code = "sw"},
+    {name = "アフリカーンス語", en = "Afrikaans", code = "af"},
+    {name = "アイスランド語", en = "Icelandic", code = "is"},
+    {name = "エスペラント語", en = "Esperanto", code = "eo"}
+}
+
+-- Быстрые фразы теперь на арабском
+local quickPhrases = {"مرحبا", "مساء الخير", "كيف حالك", "شكرا", "وداعا", "صباح الخير"}
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MultiLangTranslatorUI"
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+
+local MAIN_W = 340
+local MAIN_H = 250
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, MAIN_W, 0, MAIN_H)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 16)
+MainCorner.Parent = MainFrame
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(220, 220, 235)
+MainStroke.Thickness = 1.5
+MainStroke.Transparency = 0.3
+MainStroke.Parent = MainFrame
+
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 30)
+Header.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+Header.BorderSizePixel = 0
+Header.ZIndex = 2
+Header.Parent = MainFrame
+
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 16)
+HeaderCorner.Parent = Header
+
+local HeaderLine = Instance.new("Frame")
+HeaderLine.Size = UDim2.new(1, 0, 0, 1)
+HeaderLine.Position = UDim2.new(0, 0, 1, -1)
+HeaderLine.BackgroundColor3 = Color3.fromRGB(90, 90, 100)
+HeaderLine.BorderSizePixel = 0
+HeaderLine.ZIndex = 3
+HeaderLine.Parent = Header
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -60, 1, 0)
+Title.Position = UDim2.new(0, 12, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "TRANSLATOR SCRIPT V1.1"
+Title.TextColor3 = Color3.fromRGB(235, 235, 245)
+Title.Font = Enum.Font.GothamBlack
+Title.TextSize = 11
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.ZIndex = 4
+Title.Parent = Header
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Position = UDim2.new(1, -30, 0.5, -12)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+CloseBtn.Text = ""
+CloseBtn.AutoButtonColor = false
+CloseBtn.ZIndex = 5
+CloseBtn.Parent = Header
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseBtn
+
+local XLine1 = Instance.new("Frame")
+XLine1.Size = UDim2.new(0, 12, 0, 2)
+XLine1.Position = UDim2.new(0.5, -6, 0.5, -1)
+XLine1.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+XLine1.BorderSizePixel = 0
+XLine1.Rotation = 45
+XLine1.ZIndex = 6
+XLine1.Parent = CloseBtn
+
+local XLine2 = Instance.new("Frame")
+XLine2.Size = UDim2.new(0, 12, 0, 2)
+XLine2.Position = UDim2.new(0.5, -6, 0.5, -1)
+XLine2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+XLine2.BorderSizePixel = 0
+XLine2.Rotation = -45
+XLine2.ZIndex = 6
+XLine2.Parent = CloseBtn
+
+CloseBtn.MouseEnter:Connect(function()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(200, 50, 50)}):Play()
+end)
+CloseBtn.MouseLeave:Connect(function()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(30, 30, 40)}):Play()
+end)
+
+local SourceBtn = Instance.new("TextButton")
+SourceBtn.Size = UDim2.new(0.9, 0, 0, 28)
+SourceBtn.Position = UDim2.new(0.05, 0, 0, 36)
+SourceBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+SourceBtn.Text = "  入力言語:  自動 (Auto)  ▼"
+SourceBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
+SourceBtn.Font = Enum.Font.GothamBold
+SourceBtn.TextSize = 10
+SourceBtn.TextXAlignment = Enum.TextXAlignment.Left
+SourceBtn.AutoButtonColor = false
+SourceBtn.ZIndex = 2
+SourceBtn.Parent = MainFrame
+
+local SourceCorner = Instance.new("UICorner")
+SourceCorner.CornerRadius = UDim.new(0, 8)
+SourceCorner.Parent = SourceBtn
+
+local SourceStroke = Instance.new("UIStroke")
+SourceStroke.Color = Color3.fromRGB(60, 60, 75)
+SourceStroke.Thickness = 1
+SourceStroke.Parent = SourceBtn
+
+local TargetBtn = Instance.new("TextButton")
+TargetBtn.Size = UDim2.new(0.9, 0, 0, 28)
+TargetBtn.Position = UDim2.new(0.05, 0, 0, 68)
+TargetBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+TargetBtn.Text = "  翻訳先:  英語 (English)  ▼"
+TargetBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
+TargetBtn.Font = Enum.Font.GothamBold
+TargetBtn.TextSize = 10
+TargetBtn.TextXAlignment = Enum.TextXAlignment.Left
+TargetBtn.AutoButtonColor = false
+TargetBtn.ZIndex = 2
+TargetBtn.Parent = MainFrame
+
+local TargetCorner = Instance.new("UICorner")
+TargetCorner.CornerRadius = UDim.new(0, 8)
+TargetCorner.Parent = TargetBtn
+
+local TargetStroke = Instance.new("UIStroke")
+TargetStroke.Color = Color3.fromRGB(60, 60, 75)
+TargetStroke.Thickness = 1
+TargetStroke.Parent = TargetBtn
+
+local InputContainer = Instance.new("Frame")
+InputContainer.Size = UDim2.new(1, 0, 0, 92)
+InputContainer.Position = UDim2.new(0, 0, 0, 100)
+InputContainer.BackgroundTransparency = 1
+InputContainer.Visible = true
+InputContainer.ZIndex = 2
+InputContainer.Parent = MainFrame
+
+local TextBox = Instance.new("TextBox")
+TextBox.Size = UDim2.new(0.9, 0, 0, 34)
+TextBox.Position = UDim2.new(0.05, 0, 0, 0)
+TextBox.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
+TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextBox.PlaceholderText = "入力して送信 (全言語対応)..."
+TextBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 115)
+TextBox.Text = ""
+TextBox.Font = Enum.Font.Gotham
+TextBox.TextSize = 12
+TextBox.ClearTextOnFocus = false
+TextBox.ZIndex = 3
+TextBox.Parent = InputContainer
+
+local BoxCorner = Instance.new("UICorner")
+BoxCorner.CornerRadius = UDim.new(0, 8)
+BoxCorner.Parent = TextBox
+
+local BoxStroke = Instance.new("UIStroke")
+BoxStroke.Color = Color3.fromRGB(50, 50, 65)
+BoxStroke.Thickness = 1
+BoxStroke.Parent = TextBox
+
+local SendBtn = Instance.new("TextButton")
+SendBtn.Size = UDim2.new(0.9, 0, 0, 30)
+SendBtn.Position = UDim2.new(0.05, 0, 0, 38)
+SendBtn.BackgroundColor3 = Color3.fromRGB(215, 215, 225)
+SendBtn.Text = "翻訳してチャットに送信  ➤"
+SendBtn.TextColor3 = Color3.fromRGB(5, 5, 8)
+SendBtn.Font = Enum.Font.GothamBold
+SendBtn.TextSize = 11
+SendBtn.ZIndex = 3
+SendBtn.Parent = InputContainer
+
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(0, 8)
+BtnCorner.Parent = SendBtn
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 18)
+StatusLabel.Position = UDim2.new(0.05, 0, 0, 72)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "● 準備完了"
+StatusLabel.TextColor3 = Color3.fromRGB(130, 130, 150)
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextSize = 9
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.ZIndex = 3
+StatusLabel.Parent = InputContainer
+
+local QuickContainer = Instance.new("Frame")
+QuickContainer.Size = UDim2.new(0.9, 0, 0, 40)
+QuickContainer.Position = UDim2.new(0.05, 0, 1, -46)
+QuickContainer.BackgroundTransparency = 1
+QuickContainer.ZIndex = 2
+QuickContainer.Parent = MainFrame
+
+local QuickList = Instance.new("UIListLayout")
+QuickList.FillDirection = Enum.FillDirection.Horizontal
+QuickList.SortOrder = Enum.SortOrder.LayoutOrder
+QuickList.Padding = UDim.new(0, 4)
+QuickList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+QuickList.VerticalAlignment = Enum.VerticalAlignment.Center
+QuickList.Parent = QuickContainer
+
+local DropdownScroll = Instance.new("ScrollingFrame")
+DropdownScroll.Size = UDim2.new(0.9, 0, 0, 100)
+DropdownScroll.Position = UDim2.new(0.05, 0, 0, 68)
+DropdownScroll.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
+DropdownScroll.BorderSizePixel = 0
+DropdownScroll.Visible = false
+DropdownScroll.CanvasSize = UDim2.new(0, 0, 0, (#languages + 1) * 26)
+DropdownScroll.ScrollBarThickness = 4
+DropdownScroll.ScrollBarImageColor3 = Color3.fromRGB(120, 120, 140)
+DropdownScroll.ZIndex = 5
+DropdownScroll.Parent = MainFrame
+
+local DropdownCorner = Instance.new("UICorner")
+DropdownCorner.CornerRadius = UDim.new(0, 8)
+DropdownCorner.Parent = DropdownScroll
+
+local DropdownStroke = Instance.new("UIStroke")
+DropdownStroke.Color = Color3.fromRGB(80, 80, 95)
+DropdownStroke.Thickness = 1
+DropdownStroke.Parent = DropdownScroll
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 2)
+UIListLayout.Parent = DropdownScroll
+
+local function formatLang(lang)
+    return lang.name .. " (" .. lang.en .. ")"
+end
+
+local function updateButtonTexts()
+    SourceBtn.Text = "  入力言語:  " .. currentSourceName .. (isSourceDropdownOpen and "  ▲" or "  ▼")
+    TargetBtn.Text = "  翻訳先:  " .. currentTargetName .. (isLangDropdownOpen and "  ▲" or "  ▼")
+end
+
+local function closeAllDropdowns()
+    isLangDropdownOpen = false
+    isSourceDropdownOpen = false
+    DropdownScroll.Visible = false
+    InputContainer.Visible = true
+    QuickContainer.Visible = true
+    updateButtonTexts()
+end
+
+local function openDropdown(isSource)
+    DropdownScroll.Visible = true
+    InputContainer.Visible = false
+    QuickContainer.Visible = false
+    if isSource then
+        isSourceDropdownOpen = true
+        isLangDropdownOpen = false
+        DropdownScroll.Position = UDim2.new(0.05, 0, 0, 66)
+    else
+        isLangDropdownOpen = true
+        isSourceDropdownOpen = false
+        DropdownScroll.Position = UDim2.new(0.05, 0, 0, 98)
+    end
+    updateButtonTexts()
+    for _, child in ipairs(DropdownScroll:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    local items = {}
+    if isSource then
+        table.insert(items, {name = "自動", en = "Auto", code = "auto"})
+    end
+    for _, l in ipairs(languages) do table.insert(items, l) end
+    for _, lang in ipairs(items) do
+        local langBtn = Instance.new("TextButton")
+        langBtn.Size = UDim2.new(1, -6, 0, 24)
+        langBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+        langBtn.TextColor3 = Color3.fromRGB(220, 220, 235)
+        langBtn.Text = "   " .. formatLang(lang)
+        langBtn.Font = Enum.Font.GothamMedium
+        langBtn.TextSize = 10
+        langBtn.TextXAlignment = Enum.TextXAlignment.Left
+        langBtn.ZIndex = 6
+        langBtn.Parent = DropdownScroll
+        local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0,5); c.Parent = langBtn
+        langBtn.MouseEnter:Connect(function() TweenService:Create(langBtn,TweenInfo.new(0.1),{BackgroundColor3=Color3.fromRGB(60,60,75)}):Play() end)
+        langBtn.MouseLeave:Connect(function() TweenService:Create(langBtn,TweenInfo.new(0.1),{BackgroundColor3=Color3.fromRGB(20,20,26)}):Play() end)
+        langBtn.MouseButton1Click:Connect(function()
+            if isSource then
+                currentSourceLang = lang.code
+                currentSourceName = formatLang(lang)
+            else
+                currentTargetLang = lang.code
+                currentTargetName = formatLang(lang)
+            end
+            closeAllDropdowns()
+            StatusLabel.Text = "● " .. (isSource and "入力言語: " or "翻訳先: ") .. formatLang(lang)
+        end)
+    end
+end
+
+SourceBtn.MouseButton1Click:Connect(function()
+    if isSourceDropdownOpen then closeAllDropdowns() else openDropdown(true) end
+end)
+TargetBtn.MouseButton1Click:Connect(function()
+    if isLangDropdownOpen then closeAllDropdowns() else openDropdown(false) end
+end)
+
+local function doHttpGet(url)
+    local req = (syn and syn.request) or http_request or request or (fluxus and fluxus.request) or (http and http.request)
+    if req then
+        local ok, res = pcall(function() return req({Url=url, Method="GET"}) end)
+        if ok and res and res.Body and res.Body ~= "" then return res.Body end
+    end
+    local ok2, body = pcall(function() return game:HttpGet(url) end)
+    if ok2 and body and body ~= "" then return body end
+    return nil
+end
+
+local function translateText(text, sourceLang, targetLang)
+    local encoded = HttpService:UrlEncode(text)
+    local gUrl = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=" .. sourceLang .. "&tl=" .. targetLang .. "&dt=t&q=" .. encoded
+    local gBody = doHttpGet(gUrl)
+    if gBody then
+        local ok, decoded = pcall(function() return HttpService:JSONDecode(gBody) end)
+        if ok and decoded and type(decoded[1]) == "table" then
+            local result = ""
+            for _, seg in ipairs(decoded[1]) do
+                if type(seg) == "table" and type(seg[1]) == "string" then result = result .. seg[1] end
+            end
+            if result ~= "" then return result end
+        end
+    end
+    return nil
+end
+
+local function sendChatMessage(message)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+        if ch then ch:SendAsync(message); return end
+    end
+    local d = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+    if d then
+        local s = d:FindFirstChild("SayMessageRequest")
+        if s then s:FireServer(message, "All"); return end
+    end
+end
+
+-- Быстрые фразы (арабский текст)
+for i, phrase in ipairs(quickPhrases) do
+    local pb = Instance.new("TextButton")
+    pb.Size = UDim2.new(0, 36, 0, 36)
+    pb.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+    pb.Text = phrase
+    pb.TextColor3 = Color3.fromRGB(220, 220, 235)
+    pb.Font = Enum.Font.GothamBold
+    pb.TextSize = 8
+    pb.TextWrapped = true
+    pb.AutoButtonColor = false
+    pb.ZIndex = 3
+    pb.LayoutOrder = i
+    pb.Parent = QuickContainer
+    local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(1,0); c.Parent = pb
+    local s = Instance.new("UIStroke"); s.Color = Color3.fromRGB(70,70,85); s.Thickness = 1; s.Parent = pb
+    pb.MouseEnter:Connect(function()
+        TweenService:Create(pb,TweenInfo.new(0.12),{BackgroundColor3=Color3.fromRGB(50,50,65)}):Play()
+        TweenService:Create(s,TweenInfo.new(0.12),{Color=Color3.fromRGB(220,220,240)}):Play()
+    end)
+    pb.MouseLeave:Connect(function()
+        TweenService:Create(pb,TweenInfo.new(0.12),{BackgroundColor3=Color3.fromRGB(18,18,24)}):Play()
+        TweenService:Create(s,TweenInfo.new(0.12),{Color=Color3.fromRGB(70,70,85)}):Play()
+    end)
+    pb.MouseButton1Click:Connect(function()
+        StatusLabel.Text = "🚀 翻訳中: " .. phrase
+        StatusLabel.TextColor3 = Color3.fromRGB(190, 190, 210)
+        task.spawn(function()
+            local sl = currentSourceLang == "auto" and "ar" or currentSourceLang
+            local tr = translateText(phrase, sl, currentTargetLang)
+            if tr and tr ~= "" then
+                sendChatMessage(tr)
+                StatusLabel.Text = "✅ 送信: " .. tr
+                StatusLabel.TextColor3 = Color3.fromRGB(150, 240, 170)
+            else
+                StatusLabel.Text = "⚠️ 翻訳通信エラー"
+                StatusLabel.TextColor3 = Color3.fromRGB(255, 110, 110)
+            end
+        end)
+    end)
+end
+
+local function handleSend()
+    local raw = TextBox.Text
+    if raw == "" then return end
+    TextBox.Text = ""
+    StatusLabel.Text = "🚀 翻訳＆送信中..."
+    StatusLabel.TextColor3 = Color3.fromRGB(190, 190, 210)
+    task.spawn(function()
+        local tr = translateText(raw, currentSourceLang, currentTargetLang)
+        if tr and tr ~= "" then
+            sendChatMessage(tr)
+            StatusLabel.Text = "✅ 送信: " .. tr
+            StatusLabel.TextColor3 = Color3.fromRGB(150, 240, 170)
+        else
+            StatusLabel.Text = "⚠️ 翻訳通信エラー"
+            StatusLabel.TextColor3 = Color3.fromRGB(255, 110, 110)
+        end
+    end)
+end
+
+SendBtn.MouseButton1Click:Connect(handleSend)
+TextBox.FocusLost:Connect(function(e) if e then handleSend() end end)
+
+local OPFrame = Instance.new("Frame")
+OPFrame.Name = "TranslatorOPButton"
+OPFrame.Size = UDim2.new(0, 50, 0, 50)
+OPFrame.Position = UDim2.new(1, -70, 0, 20)
+OPFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
+OPFrame.BorderSizePixel = 0
+OPFrame.Active = true
+OPFrame.Visible = false
+OPFrame.Parent = ScreenGui
+
+local OPCorner = Instance.new("UICorner")
+OPCorner.CornerRadius = UDim.new(1, 0)
+OPCorner.Parent = OPFrame
+
+local OPStroke = Instance.new("UIStroke")
+OPStroke.Color = Color3.fromRGB(220, 220, 235)
+OPStroke.Thickness = 1.5
+OPStroke.Transparency = 0.3
+OPStroke.Parent = OPFrame
+
+local OPButton = Instance.new("TextButton")
+OPButton.Size = UDim2.new(1, 0, 1, 0)
+OPButton.BackgroundTransparency = 1
+OPButton.Text = "OP"
+OPButton.TextColor3 = Color3.fromRGB(235, 235, 245)
+OPButton.Font = Enum.Font.GothamBlack
+OPButton.TextSize = 16
+OPButton.Parent = OPFrame
+
+local opDragging = false
+local opDragStart = nil
+local opStartPos = nil
+
+OPButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        opDragging = true
+        opDragStart = input.Position
+        opStartPos = OPFrame.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if opDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - opDragStart
+        OPFrame.Position = UDim2.new(
+            opStartPos.X.Scale, opStartPos.X.Offset + delta.X,
+            opStartPos.Y.Scale, opStartPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if opDragging then
+            opDragging = false
+            local delta = input.Position - opDragStart
+            if math.abs(delta.X) < 5 and math.abs(delta.Y) < 5 then
+                isOpen = true
+                MainFrame.Visible = true
+                OPFrame.Visible = false
+                MainFrame.Size = UDim2.new(0, 0, 0, 0)
+                MainFrame.Rotation = -10
+                MainFrame.BackgroundTransparency = 1
+                MainStroke.Transparency = 1
+                TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, MAIN_W, 0, MAIN_H),
+                    Rotation = 0,
+                    BackgroundTransparency = 0
+                }):Play()
+                TweenService:Create(MainStroke, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    Transparency = 0.3
+                }):Play()
+            end
+        end
+    end
+end)
+
+local function closeUI()
+    isOpen = false
+    local tween = TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+        Size = UDim2.new(0, 0, 0, 0),
+        Rotation = 10,
+        BackgroundTransparency = 1
+    })
+    tween:Play()
+    tween.Completed:Connect(function()
+        MainFrame.Visible = false
+        OPFrame.Visible = true
+        OPFrame.Size = UDim2.new(0, 0, 0, 0)
+        TweenService:Create(OPFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 50, 0, 50)
+        }):Play()
+    end)
+end
+
+CloseBtn.MouseButton1Click:Connect(closeUI)
+
+task.spawn(function()
+    while OPFrame.Parent do
+        if OPFrame.Visible then
+            TweenService:Create(OPStroke, TweenInfo.new(1), {Transparency = 0.6}):Play()
+            task.wait(1)
+            TweenService:Create(OPStroke, TweenInfo.new(1), {Transparency = 0.3}):Play()
+            task.wait(1)
+        else
+            task.wait(0.5)
+        end
+    end
+end)
+
+task.spawn(function()
+    while MainFrame.Parent do
+        if MainFrame.Visible then
+            TweenService:Create(MainStroke, TweenInfo.new(1.2), {Transparency = 0.6}):Play()
+            task.wait(1.2)
+            TweenService:Create(MainStroke, TweenInfo.new(1.2), {Transparency = 0.3}):Play()
+            task.wait(1.2)
+        else
+            task.wait(0.5)
+        end
+    end
+end)
+
+MainFrame.Size = UDim2.new(0, 0, 0, 0)
+MainFrame.Rotation = -10
+MainFrame.BackgroundTransparency = 1
+MainStroke.Transparency = 1
+TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0, MAIN_W, 0, MAIN_H),
+    Rotation = 0,
+    BackgroundTransparency = 0
+}):Play()
+TweenService:Create(MainStroke, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    Transparency = 0.3
+}):Play()
